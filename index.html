@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>PlantUML WASM</title>
+<script src="https://cjrtnc.leaningtech.com/2.3/loader.js"></script>
+<!--script src="assets/js/loader/loader.js"></script-->
+<style type="text/css" media="screen">
+    #editor { 
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        width: 40%;
+    }
+    #renderDiv {
+        left: 45%;
+        position: absolute;
+    }
+</style>
+</head>
+<body>
+    <div hidden id="editor">@startuml
+    Bob -> Alice: Hello!
+@enduml
+    </div>
+    <div id="renderDiv">
+        <img id="renderedImage" />
+    </div>
+    <script src="assets/js/ace.min.js" type="text/javascript" charset="utf-8"></script>
+    <script src="assets/js/theme-monokai.min.js" type="text/javascript" charset="utf-8"></script>
+    <script src="assets/js/mode-javascript.min.js" type="text/javascript" charset="utf-8"></script>
+    <script>
+        function debounce(func, delay = 300) {
+            let timerId;
+            return (...args) => {
+                clearTimeout(timerId);
+                timerId = setTimeout(() => {
+                    func.apply(this, args);
+                }, delay);
+            };
+        }
+
+        static_uml = `@startuml
+
+        top to bottom direction
+        
+        entity f_avvik {
+        avvikid
+        antall_avvik
+        opprettet_dato_id
+        endret_dato_id
+        lukket_dato_id
+        }
+        
+        entity d_avvik_degenerert{
+        avvik_id
+        tittel
+        aarsak
+        }
+        
+        entity d_opprettet_dato{
+        opprettet_dato_id
+        opprettet_aar
+        opprettet_maaned
+        opprettet_kalenderdag
+        }
+        
+        entity d_lukket_dato{
+        lukket_dato_id
+        opprettet_aar
+        opprettet_maaned
+        opprettet_kalenderdag
+        }
+        
+        entity d_endret_dato{
+        endret_dato_id
+        opprettet_aar
+        opprettet_maaned
+        opprettet_kalenderdag
+        }
+        
+        entity d_kategori_bro{
+        avvik_id
+        kategori_key
+        }
+        
+        entity d_kategori{
+        kategori_key
+        kategori
+        }
+        
+        entity d_omraade{
+        avvik_id
+        omraade
+        }
+        
+        entity d_avvik_soeppel{
+        avvik_id
+        status
+        aarsakskategori
+        potensielt_utfall
+        faktisk_utfall
+        }
+        
+        f_avvik "1"---"1" d_avvik_degenerert
+        f_avvik "*"---"1" d_avvik_soeppel
+        d_kategori_bro "*"---"1" d_kategori
+        f_avvik "1" --- "*" d_kategori_bro
+        f_avvik "*"---"1" d_omraade
+        f_avvik "*"---"1" d_opprettet_dato
+        f_avvik "*"---"1" d_endret_dato
+        f_avvik "*"---"1" d_lukket_dato
+        @enduml
+        `
+       
+        function render(){
+            //cheerpjAddStringFile("/str/input.puml", editor.getValue());
+            cheerpjAddStringFile("/str/input.puml", static_uml);
+            cheerpjRunMain("net.sourceforge.plantuml.Run", "/app/plantuml-1.2023.0.jar", "-Playout=smetana", "-o", "/files/", "/str/input.puml").then(() => {
+                window.cjFileBlob("input.png").then((blob) => {
+                    document.getElementById('renderedImage').src = window.URL.createObjectURL(blob)
+                })                
+            })
+        }
+        const processChange = debounce(() => render())
+
+        ace.config.set("loadWorkerFromBlob", false)
+
+        var editor = ace.edit("editor");
+        editor.setTheme("ace/theme/monokai");
+        editor.session.setMode("ace/mode/javascript");
+        editor.session.on('change', function(delta) {
+            processChange()
+        });
+
+        cheerpjInit().then(() => {
+            render()
+        })
+    </script>
+</body>
+</html>
